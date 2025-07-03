@@ -33,33 +33,37 @@ const AddCarPage = ({ navigation }) => {
           style={styles.input}
         />
         <TouchableOpacity style={styles.scanIcon}>
-  <ScanIcon width={22} height={22} />
-  <Text style={styles.scanText}>Scan</Text>
-</TouchableOpacity>
-      </View>
+        <ScanIcon width={22} height={22} />
+        <Text style={styles.scanText}>Scan</Text>
+        </TouchableOpacity>
+        </View>
 
-      <TouchableOpacity>
+        <TouchableOpacity>
         <Text style={styles.link}>Where can I find the VIN?</Text>
-      </TouchableOpacity>
+        </TouchableOpacity>
 
-      <TouchableOpacity style={styles.button}>
+        <TouchableOpacity style={styles.button}>
         <Text style={styles.buttonText}>Search VIN</Text>
-      </TouchableOpacity>
+        </TouchableOpacity>
 
-      {/* Divider */}
-      <View style={styles.dividerRow}>
+        {/* Divider */}
+        <View style={styles.dividerRow}>
         <View style={styles.line} />
         <Text style={styles.orText}>OR</Text>
         <View style={styles.line} />
-      </View>
+        </View>
 
-      {/* License Plate Section */}
+       {/* License Plate Section */}
       <Text style={styles.sectionTitle}>Search by License Plate</Text>
 
-      <TouchableOpacity style={styles.scanRow}>
-  <ScanIcon width={18} height={18} />
-  <Text style={styles.scanRowText}>Scan License Plate</Text>
-</TouchableOpacity>
+      <TouchableOpacity
+      style={styles.scanRow}
+      onPress={() => navigation.navigate('ScanLicensePlate')}
+      >
+      <ScanIcon width={18} height={18} />
+      <Text style={styles.scanRowText}>Scan License Plate</Text>
+      </TouchableOpacity>
+
 
 
 
