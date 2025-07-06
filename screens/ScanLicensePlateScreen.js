@@ -1,15 +1,24 @@
-import React, { useEffect, useRef } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, Alert } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  ActivityIndicator,
+  Alert,
+} from 'react-native';
 import { Camera, useCameraDevice, useCameraPermission } from 'react-native-vision-camera';
 import { useNavigation, useIsFocused } from '@react-navigation/native';
 import { Linking } from 'react-native';
+import TextRecognition from '@react-native-ml-kit/text-recognition';
 
 const ScanLicensePlateScreen = () => {
   const navigation = useNavigation();
   const isFocused = useIsFocused();
   const camera = useRef(null);
   const { hasPermission, requestPermission } = useCameraPermission();
-  const device = useCameraDevice('back'); // Use correct hook
+  const device = useCameraDevice('back');
+  const [isProcessing, setIsProcessing] = useState(false);
 
   // Request camera permission
   useEffect(() => {
@@ -29,12 +38,36 @@ const ScanLicensePlateScreen = () => {
     }
   }, [hasPermission]);
 
-  // Debugging: Log available device
-  useEffect(() => {
-    console.log('Camera device:', device);
-  }, [device]);
+  // Capture and process photo
+  const capturePhoto = async () => {
+    if (camera.current && !isProcessing) {
+      setIsProcessing(true);
+      try {
+        const photo = await camera.current.takePhoto();
+        const imagePath = `file://${photo.path}`; // Vision Camera returns a file path
 
-  // Render loading state
+        // Perform OCR using react-native-ml-kit/text-recognition
+        const result = await TextRecognition.recognize(imagePath);
+
+        // Extract the license plate text (assuming it's the main text in the image)
+        const licensePlateText = result.text.trim().replace(/\s+/g, '');
+
+        if (licensePlateText) {
+          // Navigate back to AddCarPage and pass the extracted text
+          navigation.navigate('AddCar', { licensePlate: licensePlateText });
+        } else {
+          Alert.alert('No Text Found', 'Could not detect a license plate. Please try again.');
+        }
+      } catch (error) {
+        console.error('Error capturing or processing photo:', error);
+        Alert.alert('Error', 'Failed to process the image. Please try again.');
+      } finally {
+        setIsProcessing(false);
+      }
+    }
+  };
+
+  // Render loading state for permission
   if (!hasPermission) {
     return (
       <View style={styles.container}>
@@ -44,7 +77,7 @@ const ScanLicensePlateScreen = () => {
     );
   }
 
-  // Render error state
+  // Render error state for no camera
   if (!device) {
     return (
       <View style={styles.container}>
@@ -89,6 +122,16 @@ const ScanLicensePlateScreen = () => {
         </View>
 
         <TouchableOpacity
+          style={[styles.captureButton, isProcessing && styles.disabledButton]}
+          onPress={capturePhoto}
+          disabled={isProcessing}
+        >
+          <Text style={styles.captureText}>
+            {isProcessing ? 'Processing...' : 'Capture'}
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
           style={styles.manualEntry}
           onPress={() => navigation.goBack()}
         >
@@ -98,8 +141,6 @@ const ScanLicensePlateScreen = () => {
     </View>
   );
 };
-
-export default ScanLicensePlateScreen;
 
 const styles = StyleSheet.create({
   container: {
@@ -149,11 +190,28 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingVertical: 10,
     marginTop: '40%',
+    width: '80%',
   },
   plateHint: {
     color: '#fff',
     fontSize: 18,
     textAlign: 'center',
+  },
+  captureButton: {
+    backgroundColor: '#3b82f6',
+    paddingVertical: 14,
+    paddingHorizontal: 40,
+    borderRadius: 10,
+    alignSelf: 'center',
+    marginBottom: 20,
+  },
+  disabledButton: {
+    backgroundColor: '#666',
+  },
+  captureText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
   },
   manualEntry: {
     alignSelf: 'center',
@@ -165,3 +223,5 @@ const styles = StyleSheet.create({
     textDecorationLine: 'underline',
   },
 });
+
+export default ScanLicensePlateScreen;

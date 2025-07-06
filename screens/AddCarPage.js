@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -10,7 +10,16 @@ import {
 } from 'react-native';
 import ScanIcon from '../components/ScanIcon'; // adjust path
 
-const AddCarPage = ({ navigation }) => {
+const AddCarPage = ({ navigation, route }) => {
+  const [licensePlate, setLicensePlate] = useState('');
+
+  // Update license plate when route params change
+  useEffect(() => {
+    if (route.params?.licensePlate) {
+      setLicensePlate(route.params.licensePlate);
+    }
+  }, [route.params?.licensePlate]);
+
   return (
     <ScrollView contentContainerStyle={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#000" />
@@ -33,45 +42,44 @@ const AddCarPage = ({ navigation }) => {
           style={styles.input}
         />
         <TouchableOpacity style={styles.scanIcon}>
-        <ScanIcon width={22} height={22} />
-        <Text style={styles.scanText}>Scan</Text>
+          <ScanIcon width={22} height={22} />
+          <Text style={styles.scanText}>Scan</Text>
         </TouchableOpacity>
-        </View>
+      </View>
 
-        <TouchableOpacity>
+      <TouchableOpacity>
         <Text style={styles.link}>Where can I find the VIN?</Text>
-        </TouchableOpacity>
+      </TouchableOpacity>
 
-        <TouchableOpacity style={styles.button}>
+      <TouchableOpacity style={styles.button}>
         <Text style={styles.buttonText}>Search VIN</Text>
-        </TouchableOpacity>
+      </TouchableOpacity>
 
-        {/* Divider */}
-        <View style={styles.dividerRow}>
+      {/* Divider */}
+      <View style={styles.dividerRow}>
         <View style={styles.line} />
         <Text style={styles.orText}>OR</Text>
         <View style={styles.line} />
-        </View>
+      </View>
 
-       {/* License Plate Section */}
+      {/* License Plate Section */}
       <Text style={styles.sectionTitle}>Search by License Plate</Text>
 
       <TouchableOpacity
-      style={styles.scanRow}
-      onPress={() => navigation.navigate('ScanLicensePlate')}
+        style={styles.scanRow}
+        onPress={() => navigation.navigate('ScanLicensePlate')}
       >
-      <ScanIcon width={18} height={18} />
-      <Text style={styles.scanRowText}>Scan License Plate</Text>
+        <ScanIcon width={18} height={18} />
+        <Text style={styles.scanRowText}>Scan License Plate</Text>
       </TouchableOpacity>
-
-
-
 
       <View style={styles.inputGroup}>
         <TextInput
           placeholder="Enter License plate"
           placeholderTextColor="#999"
           style={styles.input}
+          value={licensePlate}
+          onChangeText={setLicensePlate}
         />
         <TextInput
           placeholder="Enter State/Province"
@@ -181,11 +189,10 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   scanRowText: {
-  color: '#3b82f6',
-  fontSize: 14,
-  marginLeft: 8, // Adjust spacing here
-},
-
+    color: '#3b82f6',
+    fontSize: 14,
+    marginLeft: 8,
+  },
   inputGroup: {
     gap: 10,
     marginBottom: 16,
