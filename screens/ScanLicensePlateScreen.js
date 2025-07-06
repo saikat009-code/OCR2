@@ -6,11 +6,14 @@ import {
   StyleSheet,
   ActivityIndicator,
   Alert,
+  Dimensions,
 } from 'react-native';
 import { Camera, useCameraDevice, useCameraPermission } from 'react-native-vision-camera';
 import { useNavigation, useIsFocused } from '@react-navigation/native';
 import { Linking } from 'react-native';
 import TextRecognition from '@react-native-ml-kit/text-recognition';
+
+const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 const ScanLicensePlateScreen = () => {
   const navigation = useNavigation();
@@ -20,7 +23,6 @@ const ScanLicensePlateScreen = () => {
   const device = useCameraDevice('back');
   const [isProcessing, setIsProcessing] = useState(false);
 
-  // Request camera permission
   useEffect(() => {
     if (!hasPermission) {
       requestPermission().then((granted) => {
@@ -38,22 +40,16 @@ const ScanLicensePlateScreen = () => {
     }
   }, [hasPermission]);
 
-  // Capture and process photo
   const capturePhoto = async () => {
     if (camera.current && !isProcessing) {
       setIsProcessing(true);
       try {
         const photo = await camera.current.takePhoto();
-        const imagePath = `file://${photo.path}`; // Vision Camera returns a file path
-
-        // Perform OCR using react-native-ml-kit/text-recognition
+        const imagePath = `file://${photo.path}`;
         const result = await TextRecognition.recognize(imagePath);
-
-        // Extract the license plate text (assuming it's the main text in the image)
         const licensePlateText = result.text.trim().replace(/\s+/g, '');
 
         if (licensePlateText) {
-          // Navigate back to AddCarPage and pass the extracted text
           navigation.navigate('AddCar', { licensePlate: licensePlateText });
         } else {
           Alert.alert('No Text Found', 'Could not detect a license plate. Please try again.');
@@ -67,7 +63,6 @@ const ScanLicensePlateScreen = () => {
     }
   };
 
-  // Render loading state for permission
   if (!hasPermission) {
     return (
       <View style={styles.container}>
@@ -77,7 +72,6 @@ const ScanLicensePlateScreen = () => {
     );
   }
 
-  // Render error state for no camera
   if (!device) {
     return (
       <View style={styles.container}>
@@ -109,16 +103,17 @@ const ScanLicensePlateScreen = () => {
         }}
       />
 
-      <View style={styles.overlay}>
-        <TouchableOpacity
-          style={styles.closeButton}
-          onPress={() => navigation.goBack()}
-        >
-          <Text style={styles.closeText}>✕</Text>
-        </TouchableOpacity>
+      <TouchableOpacity
+        style={styles.closeButton}
+        onPress={() => navigation.goBack()}
+      >
+        <Text style={styles.closeText}>✕</Text>
+      </TouchableOpacity>
 
-        <View style={styles.plateBox}>
-          <Text style={styles.plateHint}>Position License Plate in frame</Text>
+      <View style={styles.bottomContainer}>
+        <View style={styles.textWrapper}>
+          <Text style={styles.bottomTitle}>Scan License Plate</Text>
+          <Text style={styles.bottomSubtitle}>Position License Plate in frame</Text>
         </View>
 
         <TouchableOpacity
@@ -146,13 +141,12 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#000',
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   loadingText: {
     color: '#fff',
     marginTop: 12,
     fontSize: 16,
+    textAlign: 'center',
   },
   errorText: {
     color: '#fff',
@@ -170,39 +164,48 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
   },
-  overlay: {
-    ...StyleSheet.absoluteFillObject,
-    justifyContent: 'space-between',
-    padding: 20,
-    backgroundColor: 'rgba(0, 0, 0, 0.3)',
-  },
   closeButton: {
-    alignSelf: 'flex-start',
+    position: 'absolute',
+    top: 80,
+    left: 20,
+    zIndex: 10,
   },
   closeText: {
     fontSize: 28,
     color: '#fff',
   },
-  plateBox: {
+  bottomContainer: {
+    position: 'absolute',
+    bottom: 0,
+    width: '100%',
+    height: SCREEN_HEIGHT * 0.4,
+    backgroundColor: '#000',
     alignItems: 'center',
-    borderWidth: 2,
-    borderColor: 'red',
-    borderRadius: 8,
-    paddingVertical: 10,
-    marginTop: '40%',
-    width: '80%',
+    justifyContent: 'flex-start',
+    paddingTop: 30,
+    paddingHorizontal: 20,
+    paddingBottom: 20,
   },
-  plateHint: {
+  textWrapper: {
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  bottomTitle: {
     color: '#fff',
-    fontSize: 18,
+    fontSize: 40, // Increased size
+    fontWeight: 'bold',
+    marginBottom: 6,
+  },
+  bottomSubtitle: {
+    color: '#fff',
+    fontSize: 16,
     textAlign: 'center',
   },
   captureButton: {
     backgroundColor: '#3b82f6',
-    paddingVertical: 14,
+    paddingVertical: 12,
     paddingHorizontal: 40,
-    borderRadius: 10,
-    alignSelf: 'center',
+    borderRadius: 8,
     marginBottom: 20,
   },
   disabledButton: {
@@ -214,8 +217,8 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   manualEntry: {
-    alignSelf: 'center',
-    marginBottom: 40,
+    position: 'absolute',
+    bottom: 25,
   },
   manualText: {
     color: '#3b82f6',
