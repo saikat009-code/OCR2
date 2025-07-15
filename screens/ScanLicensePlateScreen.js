@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 import React, { useEffect, useRef, useState } from 'react';
 import {
   View,
@@ -8,10 +9,15 @@ import {
   Alert,
   Dimensions,
 } from 'react-native';
-import { Camera, useCameraDevice, useCameraPermission } from 'react-native-vision-camera';
+import {
+  Camera,
+  useCameraDevice,
+  useCameraPermission,
+} from 'react-native-vision-camera';
 import { useNavigation, useIsFocused } from '@react-navigation/native';
 import { Linking } from 'react-native';
 import TextRecognition from '@react-native-ml-kit/text-recognition';
+import { detectPlate } from './ml/PlateDetector';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -25,7 +31,7 @@ const ScanLicensePlateScreen = () => {
 
   useEffect(() => {
     if (!hasPermission) {
-      requestPermission().then((granted) => {
+      requestPermission().then(granted => {
         if (!granted) {
           Alert.alert(
             'Camera Permission Required',
@@ -33,12 +39,35 @@ const ScanLicensePlateScreen = () => {
             [
               { text: 'Cancel', style: 'cancel' },
               { text: 'Open Settings', onPress: () => Linking.openSettings() },
-            ]
+            ],
           );
         }
       });
     }
   }, [hasPermission]);
+
+  // const capturePhoto = async () => {
+  //   if (camera.current && !isProcessing) {
+  //     setIsProcessing(true);
+  //     try {
+  //       const photo = await camera.current.takePhoto();
+  //       const imagePath = `file://${photo.path}`;
+  //       const result = await TextRecognition.recognize(imagePath);
+  //       const licensePlateText = result.text.trim().replace(/\s+/g, '');
+
+  //       if (licensePlateText) {
+  //         navigation.navigate('AddCar', { licensePlate: licensePlateText });
+  //       } else {
+  //         Alert.alert('No Text Found', 'Could not detect a license plate. Please try again.');
+  //       }
+  //     } catch (error) {
+  //       console.error('Error capturing or processing photo:', error);
+  //       Alert.alert('Error', 'Failed to process the image. Please try again.');
+  //     } finally {
+  //       setIsProcessing(false);
+  //     }
+  //   }
+  // };
 
   const capturePhoto = async () => {
     if (camera.current && !isProcessing) {
@@ -46,17 +75,28 @@ const ScanLicensePlateScreen = () => {
       try {
         const photo = await camera.current.takePhoto();
         const imagePath = `file://${photo.path}`;
+
+        const plateResult = await detectPlate(imagePath);
+        if (!plateResult) {
+          Alert.alert('Plate Not Found', 'Try again with clearer image.');
+          return;
+        }
+
+        // If you want to crop the plate first:
+        // const croppedImage = await cropImageToRect(imagePath, plateResult.rect);
+        // const result = await TextRecognition.recognize(croppedImage);
+
         const result = await TextRecognition.recognize(imagePath);
-        const licensePlateText = result.text.trim().replace(/\s+/g, '');
+        const licensePlateText = result?.[0]?.trim()?.replace(/\s+/g, '');
 
         if (licensePlateText) {
           navigation.navigate('AddCar', { licensePlate: licensePlateText });
         } else {
-          Alert.alert('No Text Found', 'Could not detect a license plate. Please try again.');
+          Alert.alert('No Text Found', 'Could not detect a plate number.');
         }
-      } catch (error) {
-        console.error('Error capturing or processing photo:', error);
-        Alert.alert('Error', 'Failed to process the image. Please try again.');
+      } catch (err) {
+        console.error('Full capture error:', err);
+        Alert.alert('Error', 'Something went wrong.');
       } finally {
         setIsProcessing(false);
       }
@@ -76,7 +116,8 @@ const ScanLicensePlateScreen = () => {
     return (
       <View style={styles.container}>
         <Text style={styles.errorText}>
-          No camera device available. Please ensure your device has a back camera or try again.
+          No camera device available. Please ensure your device has a back
+          camera or try again.
         </Text>
         <TouchableOpacity
           style={styles.retryButton}
@@ -97,7 +138,7 @@ const ScanLicensePlateScreen = () => {
         isActive={isFocused}
         photo={true}
         onInitialized={() => console.log('Camera initialized')}
-        onError={(error) => {
+        onError={error => {
           console.error('Camera error:', error);
           Alert.alert('Camera Error', error.message);
         }}
@@ -113,7 +154,9 @@ const ScanLicensePlateScreen = () => {
       <View style={styles.bottomContainer}>
         <View style={styles.textWrapper}>
           <Text style={styles.bottomTitle}>Scan License Plate</Text>
-          <Text style={styles.bottomSubtitle}>Position License Plate in frame</Text>
+          <Text style={styles.bottomSubtitle}>
+            Position License Plate in frame
+          </Text>
         </View>
 
         <TouchableOpacity
